@@ -7,6 +7,7 @@ use Box\Spout\Writer\XLSX\Helper\FileSystemHelper;
 use Box\Spout\Writer\XLSX\Helper\SharedStringsHelper;
 use Box\Spout\Writer\XLSX\Helper\StyleHelper;
 use Box\Spout\Writer\Common\Sheet;
+use ZipStream\ZipStream;
 
 /**
  * Class Workbook
@@ -42,20 +43,26 @@ class Workbook extends AbstractWorkbook
      * @param \Box\Spout\Writer\Style\Style $defaultRowStyle
      * @throws \Box\Spout\Common\Exception\IOException If unable to create at least one of the base folders
      */
-    public function __construct($tempFolder, $shouldUseInlineStrings, $shouldCreateNewSheetsAutomatically, $defaultRowStyle)
+    public function __construct($zipStream, $shouldUseInlineStrings, $shouldCreateNewSheetsAutomatically, $defaultRowStyle)
     {
         parent::__construct($shouldCreateNewSheetsAutomatically, $defaultRowStyle);
 
-        $this->shouldUseInlineStrings = $shouldUseInlineStrings;
+        $this->shouldUseInlineStrings = TRUE; //$shouldUseInlineStrings;
 
-        $this->fileSystemHelper = new FileSystemHelper($tempFolder);
+        $this->fileSystemHelper = new FileSystemHelper('.');
+        $this->fileSystemHelper->setZipStream($zipStream);
         $this->fileSystemHelper->createBaseFilesAndFolders();
 
         $this->styleHelper = new StyleHelper($defaultRowStyle);
 
         // This helper will be shared by all sheets
         $xlFolder = $this->fileSystemHelper->getXlFolder();
-        $this->sharedStringsHelper = new SharedStringsHelper($xlFolder);
+        if (! $this->shouldUseInlineStrings) {
+            $this->sharedStringsHelper = new SharedStringsHelper($xlFolder);
+        }
+        else {
+            $this->sharedStringsHelper = NULL;
+        }
     }
 
     /**
@@ -71,7 +78,7 @@ class Workbook extends AbstractWorkbook
      */
     protected function getMaxRowsPerWorksheet()
     {
-        return self::$maxRowsPerWorksheet;
+        return self::maxRowsPerWorksheet;
     }
 
     /**
@@ -86,7 +93,8 @@ class Workbook extends AbstractWorkbook
         $sheet = new Sheet($newSheetIndex);
 
         $worksheetFilesFolder = $this->fileSystemHelper->getXlWorksheetsFolder();
-        $worksheet = new Worksheet($sheet, $worksheetFilesFolder, $this->sharedStringsHelper, $this->shouldUseInlineStrings);
+        $worksheet = new Worksheet($this->getZipStream(), $sheet, $worksheetFilesFolder,
+                                   $this->sharedStringsHelper, $this->shouldUseInlineStrings);
         $this->worksheets[] = $worksheet;
 
         return $worksheet;
@@ -109,27 +117,15 @@ class Workbook extends AbstractWorkbook
             $worksheet->close();
         }
 
-        $this->sharedStringsHelper->close();
+        if ($this->shouldUseInlineStrings) {
+          $this->sharedStringsHelper->close();
+        }
 
         // Finish creating all the necessary files before zipping everything together
         $this->fileSystemHelper
             ->createContentTypesFile($worksheets)
             ->createWorkbookFile($worksheets)
             ->createWorkbookRelsFile($worksheets)
-            ->createStylesFile($this->styleHelper)
-            ->zipRootFolderAndCopyToStream($finalFilePointer);
-
-        $this->cleanupTempFolder();
-    }
-
-    /**
-     * Deletes the root folder created in the temp folder and all its contents.
-     *
-     * @return void
-     */
-    protected function cleanupTempFolder()
-    {
-        $xlsxRootFolder = $this->fileSystemHelper->getRootFolder();
-        $this->fileSystemHelper->deleteFolderRecursively($xlsxRootFolder);
+            ->createStylesFile($this->styleHelper);
     }
 }

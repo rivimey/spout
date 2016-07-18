@@ -2,8 +2,8 @@
 
 namespace Box\Spout\Writer\XLSX\Helper;
 
-use Box\Spout\Writer\Common\Helper\ZipHelper;
 use Box\Spout\Writer\XLSX\Internal\Worksheet;
+use ZipStreamer\ZipStreamer;
 
 /**
  * Class FileSystemHelper
@@ -46,6 +46,81 @@ class FileSystemHelper extends \Box\Spout\Common\Helper\FileSystemHelper
 
     /** @var string Path to the "worksheets" folder inside the "xl" folder */
     protected $xlWorksheetsFolder;
+
+    /** @var  ZipStreamer $zipStream */
+    protected $zipStream;
+
+    public function setZipStream(ZipStreamer $zipStream)
+    {
+      $this->zipStream = $zipStream;
+    }
+
+    public function getZipStream()
+    {
+      return $this->zipStream;
+    }
+
+    /**
+     * Creates an empty folder with the given name under the given parent folder.
+     *
+     * @param string $parentFolderPath The parent folder path under which the folder is going to be created
+     * @param string $folderName The name of the folder to create
+     * @return string Path of the created folder
+     * @throws \Box\Spout\Common\Exception\IOException If unable to create the folder or if the folder path is not inside of the base folder
+     */
+    public function createFolder($parentFolderPath, $folderName)
+    {
+      if (!empty($parentFolderPath)) {
+        $folderPath = $parentFolderPath . '/' . $folderName;
+      }
+      else {
+        $folderPath = $folderName;
+      }
+      $this->zipStream->addEmptyDir($folderPath);
+      return $folderPath;
+    }
+
+    /**
+     * Creates a file with the given name and content in the given folder.
+     * The parent folder must exist.
+     *
+     * @param string $parentFolderPath The parent folder path where the file is going to be created
+     * @param string $fileName The name of the file to create
+     * @param string $fileContents The contents of the file to create
+     * @return string Path of the created file
+     * @throws \Box\Spout\Common\Exception\IOException If unable to create the file or if the file path is not inside of the base folder
+     */
+    public function createFileWithContents($parentFolderPath, $fileName, $fileContents)
+    {
+      if (!empty($parentFolderPath)) {
+        $folderPath = $parentFolderPath . '/' . $folderName;
+      }
+      else {
+        $folderPath = $folderName;
+      }
+      $this->zipStream->addFileFromString($filePath, $fileContents);
+      return $filePath;
+    }
+
+    /**
+     * Delete the file at the given path
+     *
+     * @param string $filePath Path of the file to delete
+     * @return void
+     * @throws \Box\Spout\Common\Exception\IOException If the file path is not inside of the base folder
+     */
+    public function deleteFile($filePath)
+    { }
+
+    /**
+     * Delete the folder at the given path as well as all its contents
+     *
+     * @param string $folderPath Path of the folder to delete
+     * @return void
+     * @throws \Box\Spout\Common\Exception\IOException If the folder path is not inside of the base folder
+     */
+    public function deleteFolderRecursively($folderPath)
+    { }
 
     /**
      * @return string
@@ -94,7 +169,7 @@ class FileSystemHelper extends \Box\Spout\Common\Helper\FileSystemHelper
      */
     protected function createRootFolder()
     {
-        $this->rootFolder = $this->createFolder($this->baseFolderPath, uniqid('xlsx', true));
+        $this->rootFolder = $this->createFolder('', $this->baseFolderPath);
         return $this;
     }
 
@@ -353,19 +428,19 @@ EOD;
      */
     public function zipRootFolderAndCopyToStream($streamPointer)
     {
-        $zipHelper = new ZipHelper($this->rootFolder);
-
-        // In order to have the file's mime type detected properly, files need to be added
-        // to the zip file in a particular order.
-        // "[Content_Types].xml" then at least 2 files located in "xl" folder should be zipped first.
-        $zipHelper->addFileToArchive($this->rootFolder, self::CONTENT_TYPES_XML_FILE_NAME);
-        $zipHelper->addFileToArchive($this->rootFolder, self::XL_FOLDER_NAME . '/' . self::WORKBOOK_XML_FILE_NAME);
-        $zipHelper->addFileToArchive($this->rootFolder, self::XL_FOLDER_NAME . '/' . self::STYLES_XML_FILE_NAME);
-
-        $zipHelper->addFolderToArchive($this->rootFolder, ZipHelper::EXISTING_FILES_SKIP);
-        $zipHelper->closeArchiveAndCopyToStream($streamPointer);
-
-        // once the zip is copied, remove it
-        $this->deleteFile($zipHelper->getZipFilePath());
+//        $zipHelper = new ZipHelper($this->rootFolder);
+//
+//        // In order to have the file's mime type detected properly, files need to be added
+//        // to the zip file in a particular order.
+//        // "[Content_Types].xml" then at least 2 files located in "xl" folder should be zipped first.
+//        $zipHelper->addFileToArchive($this->rootFolder, self::CONTENT_TYPES_XML_FILE_NAME);
+//        $zipHelper->addFileToArchive($this->rootFolder, self::XL_FOLDER_NAME . '/' . self::WORKBOOK_XML_FILE_NAME);
+//        $zipHelper->addFileToArchive($this->rootFolder, self::XL_FOLDER_NAME . '/' . self::STYLES_XML_FILE_NAME);
+//
+//        $zipHelper->addFolderToArchive($this->rootFolder, ZipHelper::EXISTING_FILES_SKIP);
+//        $zipHelper->closeArchiveAndCopyToStream($streamPointer);
+//
+//        // once the zip is copied, remove it
+//        $this->deleteFile($zipHelper->getZipFilePath());
     }
 }
