@@ -4,19 +4,18 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file",
         "This file is @generated automatically"
     ],
-    "hash": "804b725a2eba1b51eb74ffc6c20c73e3",
-    "content-hash": "ba4752908fc69f5b29ff6b001f3dce57",
+    "hash": "dc0b446e062e76d0580fb41549a5b556",
+    "content-hash": "ffa3fc22f6d7c9fb9f1c9325d9ad4dc4",
     "packages": [
         {
             "name": "rivimey/PHPZipStreamer",
-            "version": "dev-master",
+            "version": "1.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/rivimey/PHPZipStreamer.git",
                 "reference": "master"
             },
-            "type": "library",
-            "time": "2016-07-14 12:59:15"
+            "type": "library"
         },
         {
             "name": "webmozart/assert",
@@ -1915,9 +1914,7 @@
     ],
     "aliases": [],
     "minimum-stability": "stable",
-    "stability-flags": {
-        "rivimey/phpzipstreamer": 20
-    },
+    "stability-flags": [],
     "prefer-stable": false,
     "prefer-lowest": false,
     "platform": {
