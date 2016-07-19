@@ -16,18 +16,18 @@
             "type": "package",
             "package": {
                 "name": "rivimey/PHPZipStreamer",
-                "version": "2.5.1",
+                "version": "1.1",
                 "source": {
                     "url": "https://github.com/rivimey/PHPZipStreamer.git",
                     "type": "git",
-                    "reference": "2.5.1-rivimey"
+                    "reference": "master"
                 }
             }
         }
     ],
     "require": {
         "webmozart/path-util": "~2.3",
-        "rivimey/PHPZipStreamer": "~2.5",
+        "rivimey/PHPZipStreamer": "1.1",
         "php": ">=5.4.0",
         "ext-zip": "*",
         "ext-xmlreader": "*",
