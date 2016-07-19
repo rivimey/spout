@@ -16,7 +16,7 @@
             "type": "package",
             "package": {
                 "name": "rivimey/PHPZipStreamer",
-                "version": "2.5.1-rivimey",
+                "version": "2.5.1",
                 "source": {
                     "url": "https://github.com/rivimey/PHPZipStreamer.git",
                     "type": "git",
