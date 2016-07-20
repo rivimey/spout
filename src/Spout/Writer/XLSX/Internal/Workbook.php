@@ -78,7 +78,7 @@ class Workbook extends AbstractWorkbook
      */
     protected function getMaxRowsPerWorksheet()
     {
-        return self::maxRowsPerWorksheet;
+        return self::$maxRowsPerWorksheet;
     }
 
     /**
@@ -93,7 +93,7 @@ class Workbook extends AbstractWorkbook
         $sheet = new Sheet($newSheetIndex);
 
         $worksheetFilesFolder = $this->fileSystemHelper->getXlWorksheetsFolder();
-        $worksheet = new Worksheet($this->getZipStream(), $sheet, $worksheetFilesFolder,
+        $worksheet = new Worksheet($this->fileSystemHelper->getZipStream(), $sheet, $worksheetFilesFolder,
                                    $this->sharedStringsHelper, $this->shouldUseInlineStrings);
         $this->worksheets[] = $worksheet;
 
@@ -117,7 +117,7 @@ class Workbook extends AbstractWorkbook
             $worksheet->close();
         }
 
-        if ($this->shouldUseInlineStrings) {
+        if (!$this->shouldUseInlineStrings) {
           $this->sharedStringsHelper->close();
         }
 

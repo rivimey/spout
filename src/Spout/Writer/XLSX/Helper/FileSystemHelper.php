@@ -94,12 +94,12 @@ class FileSystemHelper extends \Box\Spout\Common\Helper\FileSystemHelper
     public function createFileWithContents($parentFolderPath, $fileName, $fileContents)
     {
       if (!empty($parentFolderPath)) {
-        $folderPath = $parentFolderPath . '/' . $folderName;
+        $filePath = $parentFolderPath . '/' . $fileName;
       }
       else {
-        $folderPath = $folderName;
+        $filePath = $folderName;
       }
-      $this->zipStream->addFileFromString($filePath, $fileContents);
+      $this->zipStream->addFileFromString($fileContents, $filePath);
       return $filePath;
     }
 

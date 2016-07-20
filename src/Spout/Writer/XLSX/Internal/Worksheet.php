@@ -164,9 +164,6 @@ EOD;
      */
     public function close()
     {
-        if (!is_resource($this->sheetFilePointer)) {
-            return;
-        }
         $this->zipStream->addFileWrite('</sheetData></worksheet>');
         $this->zipStream->addFileClose();
     }
