@@ -5,8 +5,8 @@ namespace Box\Spout\Writer\XLSX;
 use Box\Spout\Writer\AbstractMultiSheetsWriter;
 use Box\Spout\Writer\Style\StyleBuilder;
 use Box\Spout\Writer\XLSX\Internal\Workbook;
-use ZipStreamer\COMPR;
-use ZipStreamer\ZipStreamer;
+use Rivimey\ZipStreamer\Deflate\COMPR;
+use Rivimey\ZipStreamer\ZipStreamer;
 
 /**
  * Class Writer

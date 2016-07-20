@@ -3,7 +3,8 @@
 namespace Box\Spout\Writer\XLSX\Helper;
 
 use Box\Spout\Writer\XLSX\Internal\Worksheet;
-use ZipStreamer\ZipStreamer;
+use Rivimey\ZipStreamer\Deflate\COMPR;
+use Rivimey\ZipStreamer\ZipStreamer;
 
 /**
  * Class FileSystemHelper
