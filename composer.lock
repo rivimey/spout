@@ -4,18 +4,73 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file",
         "This file is @generated automatically"
     ],
-    "hash": "dc0b446e062e76d0580fb41549a5b556",
-    "content-hash": "ffa3fc22f6d7c9fb9f1c9325d9ad4dc4",
+    "hash": "5b8e72602a1a9f234c70e0cf81b48ee8",
+    "content-hash": "0364c0226f64626ecbbdcc5432bbdb77",
     "packages": [
         {
-            "name": "rivimey/PHPZipStreamer",
-            "version": "1.1",
+            "name": "rivimey/zipstreamer",
+            "version": "v1.2",
             "source": {
                 "type": "git",
                 "url": "https://github.com/rivimey/PHPZipStreamer.git",
-                "reference": "master"
+                "reference": "7375e214e6ca40f53d631ddb26909d69ec32aed1"
             },
-            "type": "library"
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/rivimey/PHPZipStreamer/zipball/7375e214e6ca40f53d631ddb26909d69ec32aed1",
+                "reference": "7375e214e6ca40f53d631ddb26909d69ec32aed1",
+                "shasum": ""
+            },
+            "require": {
+                "ext-http": "~2.0",
+                "ext-mbstring": "*",
+                "php": ">=5.3.0"
+            },
+            "require-dev": {
+                "ext-xdebug": "*",
+                "phpunit/phpunit": "~4.8"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "Rivimey\\ZipStreamer\\": "src/"
+                }
+            },
+            "license": [
+                "GPL-3.0+"
+            ],
+            "authors": [
+                {
+                    "name": "Nicolai Ehemann",
+                    "email": "en@enlightened.de",
+                    "role": "Author/Maintainer"
+                },
+                {
+                    "name": "André Rothe",
+                    "email": "arothe@zks.uni-leipzig.de",
+                    "role": "Contributor"
+                },
+                {
+                    "name": "Lukas Reschke",
+                    "email": "lukas@owncloud.com",
+                    "role": "Contributor"
+                },
+                {
+                    "name": "Ruth Ivimey-Cook",
+                    "email": "ruth@researchfish.com",
+                    "role": "Contributor"
+                }
+            ],
+            "description": "Stream zip files without i/o overhead",
+            "homepage": "https://github.com/McNetic/PHPZipStreamer",
+            "keywords": [
+                "stream",
+                "zip"
+            ],
+            "support": {
+                "source": "https://github.com/rivimey/PHPZipStreamer/tree/v1.1"
+            },
+            "time": "2016-07-20 14:59:15"
         },
         {
             "name": "webmozart/assert",
