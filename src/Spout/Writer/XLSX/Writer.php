@@ -5,6 +5,8 @@ namespace Box\Spout\Writer\XLSX;
 use Box\Spout\Writer\AbstractMultiSheetsWriter;
 use Box\Spout\Writer\Style\StyleBuilder;
 use Box\Spout\Writer\XLSX\Internal\Workbook;
+use Rivimey\ZipStreamer\Deflate\COMPR;
+use Rivimey\ZipStreamer\ZipStreamer;
 
 /**
  * Class Writer
@@ -29,6 +31,9 @@ class Writer extends AbstractMultiSheetsWriter
 
     /** @var Internal\Workbook The workbook for the XLSX file */
     protected $book;
+
+    /** @var ZipStream The output object. */
+    protected $zipStreamHelper;
 
     /**
      * Sets a custom temporary folder for creating intermediate files/folders.
@@ -73,8 +78,16 @@ class Writer extends AbstractMultiSheetsWriter
     protected function openWriter()
     {
         if (!$this->book) {
-            $tempFolder = ($this->tempFolder) ? : sys_get_temp_dir();
-            $this->book = new Workbook($tempFolder, $this->shouldUseInlineStrings, $this->shouldCreateNewSheetsAutomatically, $this->defaultRowStyle);
+            $opts = array(
+              'zip64' => FALSE,
+              'compress' => COMPR::STORE,
+              'outstream' => $this->filePointer,
+            );
+            $this->zipStreamHelper = new ZipStreamer($opts);
+            $this->book = new Workbook($this->zipStreamHelper,
+                                       $this->shouldUseInlineStrings,
+                                       $this->shouldCreateNewSheetsAutomatically,
+                                       $this->defaultRowStyle);
             $this->book->addNewSheetAndMakeItCurrent();
         }
     }
@@ -128,5 +141,10 @@ class Writer extends AbstractMultiSheetsWriter
         if ($this->book) {
             $this->book->close($this->filePointer);
         }
+        if ($this->zipStreamHelper) {
+            $this->zipStreamHelper->finalize();
+        }
+        $this->zipStreamHelper = NULL;
+        $this->book = NULL;
     }
 }
