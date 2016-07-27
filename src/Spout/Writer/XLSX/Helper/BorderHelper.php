@@ -52,7 +52,7 @@ class BorderHelper
             $borderPart->getName()
         );
 
-        return $partEl . PHP_EOL;
+        return $partEl . XML_EOL;
     }
 
     /**

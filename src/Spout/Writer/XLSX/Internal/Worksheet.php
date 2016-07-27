@@ -150,7 +150,7 @@ EOD;
             $cellNumber++;
         }
 
-        $rowXML .= '</row>';
+        $rowXML .= '</row>' . XML_EOL;
         $this->zipStream->addFileWrite($rowXML);
 
         // only update the count if the write worked

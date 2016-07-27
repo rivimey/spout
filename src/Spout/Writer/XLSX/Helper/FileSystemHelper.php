@@ -6,6 +6,8 @@ use Box\Spout\Writer\XLSX\Internal\Worksheet;
 use Rivimey\ZipStreamer\Deflate\COMPR;
 use Rivimey\ZipStreamer\ZipStreamer;
 
+const XML_EOL = "\n";
+
 /**
  * Class FileSystemHelper
  * This class provides helper functions to help with the file system operations
@@ -410,7 +412,7 @@ EOD;
             $workbookRelsXmlFileContents .= '<Relationship Id="rIdSheet' . $worksheetId . '" Target="worksheets/sheet' . $worksheetId . '.xml" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet"/>';
         }
 
-        $workbookRelsXmlFileContents .= '</Relationships>';
+        $workbookRelsXmlFileContents .= '</Relationships>' . XML_EOL;
 
         $this->createFileWithContents($this->xlRelsFolder, self::WORKBOOK_RELS_XML_FILE_NAME, $workbookRelsXmlFileContents);
         return $this;
