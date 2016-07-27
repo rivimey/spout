@@ -12,4 +12,4 @@ $srcBaseDirectory = dirname(dirname(__FILE__));
 
 $loader = new Psr4Autoloader();
 $loader->register();
-$loader->addNamespace('Box\Spout', $srcBaseDirectory);
+$loader->addNamespace('Box\\Spout', $srcBaseDirectory);
