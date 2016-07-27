@@ -109,6 +109,14 @@ EOD;
     }
 
     /**
+     * @return int The ID of the worksheet
+     */
+    public function getSheetRId()
+    {
+        return 'rIdSheet' . $this->getId();
+    }
+
+    /**
      * Adds data to the worksheet.
      *
      * @param array $dataRow Array containing data to be written. Cannot be empty.

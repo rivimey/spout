@@ -127,7 +127,7 @@ class Workbook extends AbstractWorkbook
 
         // Finish creating all the necessary files before zipping everything together
         $this->fileSystemHelper
-            ->createContentTypesFile($worksheets)
+            ->createContentTypesFile($worksheets, $this->shouldUseInlineStrings)
             ->createWorkbookFile($worksheets)
             ->createWorkbookRelsFile($worksheets)
             ->createStylesFile($this->styleHelper);
