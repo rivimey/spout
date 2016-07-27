@@ -51,14 +51,24 @@ class FileSystemHelper extends \Box\Spout\Common\Helper\FileSystemHelper
     /** @var  ZipStreamer $zipStream */
     protected $zipStream;
 
+    /**
+     * Set the ZipStream object to be used to write files.
+     *
+     * @return ZipStreamer
+     */
     public function setZipStream(ZipStreamer $zipStream)
     {
-      $this->zipStream = $zipStream;
+        $this->zipStream = $zipStream;
     }
 
+    /**
+     * Return the ZipStream object associated with this file helper.
+     *
+     * @return ZipStreamer
+     */
     public function getZipStream()
     {
-      return $this->zipStream;
+        return $this->zipStream;
     }
 
     /**
@@ -71,14 +81,15 @@ class FileSystemHelper extends \Box\Spout\Common\Helper\FileSystemHelper
      */
     public function createFolder($parentFolderPath, $folderName)
     {
-      if (!empty($parentFolderPath)) {
-        $folderPath = $parentFolderPath . '/' . $folderName;
-      }
-      else {
-        $folderPath = $folderName;
-      }
-      $this->zipStream->addEmptyDir($folderPath);
-      return $folderPath;
+        if (!empty($parentFolderPath)) {
+            $folderPath = $parentFolderPath . '/' . $folderName;
+        } else {
+            $folderPath = $folderName;
+        }
+
+        // TODO: Could explicitly add the subfolder but it isn't needed... Is there a reason to do so?
+        // $this->zipStream->addEmptyDir($folderPath);
+        return $folderPath;
     }
 
     /**
@@ -93,35 +104,35 @@ class FileSystemHelper extends \Box\Spout\Common\Helper\FileSystemHelper
      */
     public function createFileWithContents($parentFolderPath, $fileName, $fileContents)
     {
-      if (!empty($parentFolderPath)) {
-        $filePath = $parentFolderPath . '/' . $fileName;
-      }
-      else {
-        $filePath = $folderName;
-      }
-      $this->zipStream->addFileFromString($fileContents, $filePath);
-      return $filePath;
+        if (!empty($parentFolderPath)) {
+            $filePath = $parentFolderPath . '/' . $fileName;
+        } else {
+            $filePath = $fileName;
+        }
+        $this->zipStream->addFileFromString($fileContents, $filePath);
+
+        return $filePath;
     }
 
     /**
-     * Delete the file at the given path
+     * Not implemented: Delete the file
      *
-     * @param string $filePath Path of the file to delete
-     * @return void
-     * @throws \Box\Spout\Common\Exception\IOException If the file path is not inside of the base folder
+     * @throws \Box\Spout\Common\Exception\WriterException
      */
     public function deleteFile($filePath)
-    { }
+    {
+        throw new WriterException('Unable to delete file in streamed zip output');
+    }
 
     /**
-     * Delete the folder at the given path as well as all its contents
+     * Not implemented: Delete the folder
      *
-     * @param string $folderPath Path of the folder to delete
-     * @return void
-     * @throws \Box\Spout\Common\Exception\IOException If the folder path is not inside of the base folder
+     * @throws \Box\Spout\Common\Exception\WriterException
      */
     public function deleteFolderRecursively($folderPath)
-    { }
+    {
+        throw new WriterException('Unable to delete folder in streamed zip output');
+    }
 
     /**
      * @return string
@@ -171,6 +182,7 @@ class FileSystemHelper extends \Box\Spout\Common\Helper\FileSystemHelper
     protected function createRootFolder()
     {
         $this->rootFolder = $this->createFolder('', $this->baseFolderPath);
+
         return $this;
     }
 
@@ -207,12 +219,11 @@ class FileSystemHelper extends \Box\Spout\Common\Helper\FileSystemHelper
 EOD;
 
         $this->createFileWithContents($this->relsFolder, self::RELS_FILE_NAME, $relsFileContents);
-
         return $this;
     }
 
     /**
-     * Creates the "docProps" folder under the root folder as well as the "app.xml" and "core.xml" files in it
+     * Creates the "docProps" folder under the root folder as well as the "app.xml" and "core.xml" files in it.
      *
      * @return FileSystemHelper
      * @throws \Box\Spout\Common\Exception\IOException If unable to create the folder or one of the files
@@ -236,6 +247,9 @@ EOD;
     protected function createAppXmlFile()
     {
         $appName = self::APP_NAME;
+        // TODO: xmlns:vt="{$this->ooDocXmlns}/docPropsVTypes" is needed for TitlesOfParts or HeadingPairs.
+        // Plausibly add: <Company> <AppVersion>
+        // Maybe also: <ScaleCrop> <TitlesOfParts> <LinksUpToDate> <SharedDoc>
         $appXmlFileContents = <<<EOD
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Properties xmlns="http://schemas.openxmlformats.org/officeDocument/2006/extended-properties">
@@ -268,7 +282,6 @@ EOD;
 EOD;
 
         $this->createFileWithContents($this->docPropsFolder, self::CORE_XML_FILE_NAME, $coreXmlFileContents);
-
         return $this;
     }
 
@@ -283,7 +296,6 @@ EOD;
         $this->xlFolder = $this->createFolder($this->rootFolder, self::XL_FOLDER_NAME);
         $this->createXlRelsFolder();
         $this->createXlWorksheetsFolder();
-
         return $this;
     }
 
@@ -341,7 +353,6 @@ EOD;
 EOD;
 
         $this->createFileWithContents($this->rootFolder, self::CONTENT_TYPES_XML_FILE_NAME, $contentTypesXmlFileContents);
-
         return $this;
     }
 
@@ -375,7 +386,6 @@ EOD;
 EOD;
 
         $this->createFileWithContents($this->xlFolder, self::WORKBOOK_XML_FILE_NAME, $workbookXmlFileContents);
-
         return $this;
     }
 
@@ -403,7 +413,6 @@ EOD;
         $workbookRelsXmlFileContents .= '</Relationships>';
 
         $this->createFileWithContents($this->xlRelsFolder, self::WORKBOOK_RELS_XML_FILE_NAME, $workbookRelsXmlFileContents);
-
         return $this;
     }
 
@@ -417,7 +426,6 @@ EOD;
     {
         $stylesXmlFileContents = $styleHelper->getStylesXMLFileContent();
         $this->createFileWithContents($this->xlFolder, self::STYLES_XML_FILE_NAME, $stylesXmlFileContents);
-
         return $this;
     }
 

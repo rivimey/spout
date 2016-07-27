@@ -79,15 +79,15 @@ class Writer extends AbstractMultiSheetsWriter
     {
         if (!$this->book) {
             $opts = array(
-              'zip64' => FALSE,
-              'compress' => COMPR::STORE,
-              'outstream' => $this->filePointer,
+                'zip64' => false,
+                'compress' => COMPR::STORE,
+                'outstream' => $this->filePointer,
             );
             $this->zipStreamHelper = new ZipStreamer($opts);
             $this->book = new Workbook($this->zipStreamHelper,
-                                       $this->shouldUseInlineStrings,
-                                       $this->shouldCreateNewSheetsAutomatically,
-                                       $this->defaultRowStyle);
+                $this->shouldUseInlineStrings,
+                $this->shouldCreateNewSheetsAutomatically,
+                $this->defaultRowStyle);
             $this->book->addNewSheetAndMakeItCurrent();
         }
     }
