@@ -51,7 +51,7 @@ class Workbook extends AbstractWorkbook
 
         $this->shouldUseInlineStrings = TRUE; //$shouldUseInlineStrings;
 
-        $this->fileSystemHelper = new FileSystemHelper('.');
+        $this->fileSystemHelper = new FileSystemHelper('');
         $this->fileSystemHelper->setZipStream($zipStream);
         $this->fileSystemHelper->createBaseFilesAndFolders();
 
