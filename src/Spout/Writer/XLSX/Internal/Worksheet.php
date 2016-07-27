@@ -49,7 +49,7 @@ EOD;
 
     /**
      * @param \Box\Spout\Writer\Common\Sheet $externalSheet The associated "external" sheet
-     * @param string $worksheetFilesFolder Temporary folder where the files to create the XLSX will be stored
+     * @param string $worksheetFilesFolder Folder of Zip file where the files to create the XLSX will be stored
      * @param \Box\Spout\Writer\XLSX\Helper\SharedStringsHelper $sharedStringsHelper Helper for shared strings
      * @param bool $shouldUseInlineStrings Whether inline or shared strings should be used
      * @throws \Box\Spout\Common\Exception\IOException If the sheet data file cannot be opened for writing
@@ -123,7 +123,7 @@ EOD;
 
         $rowXML = '<row r="' . $rowIndex . '" spans="1:' . $numCells . '">';
 
-        foreach($dataRow as $cellValue) {
+        foreach ($dataRow as $cellValue) {
             $columnIndex = CellHelper::getCellIndexFromColumnIndex($cellNumber);
             $cellXML = '<c r="' . $columnIndex . $rowIndex . '"';
             $cellXML .= ' s="' . $style->getId() . '"';
@@ -136,7 +136,7 @@ EOD;
                     $cellXML .= ' t="s"><v>' . $sharedStringId . '</v></c>';
                 }
             } else if (CellHelper::isBoolean($cellValue)) {
-                    $cellXML .= ' t="b"><v>' . intval($cellValue) . '</v></c>';
+                $cellXML .= ' t="b"><v>' . intval($cellValue) . '</v></c>';
             } else if (CellHelper::isNumeric($cellValue)) {
                 $cellXML .= '><v>' . $cellValue . '</v></c>';
             } else if (empty($cellValue)) {

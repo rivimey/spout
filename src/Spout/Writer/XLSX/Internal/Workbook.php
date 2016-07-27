@@ -20,6 +20,7 @@ class Workbook extends AbstractWorkbook
 {
     /**
      * Maximum number of rows a XLSX sheet can contain
+     *
      * @see http://office.microsoft.com/en-us/excel-help/excel-specifications-and-limits-HP010073849.aspx
      */
     protected static $maxRowsPerWorksheet = 1048576;
@@ -41,7 +42,8 @@ class Workbook extends AbstractWorkbook
      * @param bool $shouldUseInlineStrings
      * @param bool $shouldCreateNewSheetsAutomatically
      * @param \Box\Spout\Writer\Style\Style $defaultRowStyle
-     * @throws \Box\Spout\Common\Exception\IOException If unable to create at least one of the base folders
+     *
+     * @throws \Box\Spout\Common\Exception\IOException If unable to create at least one of the base folders.
      */
     public function __construct($zipStream, $shouldUseInlineStrings, $shouldCreateNewSheetsAutomatically, $defaultRowStyle)
     {
@@ -57,16 +59,16 @@ class Workbook extends AbstractWorkbook
 
         // This helper will be shared by all sheets
         $xlFolder = $this->fileSystemHelper->getXlFolder();
-        if (! $this->shouldUseInlineStrings) {
+        if (!$this->shouldUseInlineStrings) {
             $this->sharedStringsHelper = new SharedStringsHelper($xlFolder);
-        }
-        else {
+        } else {
             $this->sharedStringsHelper = NULL;
         }
     }
 
     /**
-     * @return \Box\Spout\Writer\XLSX\Helper\StyleHelper Helper to apply styles to XLSX files
+     * @return \Box\Spout\Writer\XLSX\Helper\StyleHelper
+     *  Helper to apply styles to XLSX files
      */
     protected function getStyleHelper()
     {
@@ -85,7 +87,7 @@ class Workbook extends AbstractWorkbook
      * Creates a new sheet in the workbook. The current sheet remains unchanged.
      *
      * @return Worksheet The created sheet
-     * @throws \Box\Spout\Common\Exception\IOException If unable to open the sheet for writing
+     * @throws \Box\Spout\Common\Exception\IOException If unable to open the sheet for writing.
      */
     public function addNewSheet()
     {
@@ -93,19 +95,21 @@ class Workbook extends AbstractWorkbook
         $sheet = new Sheet($newSheetIndex);
 
         $worksheetFilesFolder = $this->fileSystemHelper->getXlWorksheetsFolder();
-        $worksheet = new Worksheet($this->fileSystemHelper->getZipStream(), $sheet, $worksheetFilesFolder,
-                                   $this->sharedStringsHelper, $this->shouldUseInlineStrings);
+        $worksheet = new Worksheet(
+            $this->fileSystemHelper->getZipStream(),
+            $sheet, $worksheetFilesFolder,
+            $this->sharedStringsHelper, $this->shouldUseInlineStrings
+        );
         $this->worksheets[] = $worksheet;
 
         return $worksheet;
     }
 
     /**
-     * Closes the workbook and all its associated sheets.
-     * All the necessary files are written to disk and zipped together to create the XLSX file.
-     * All the temporary files are then deleted.
+     * Closes the workbook and all its associated sheets, and the remaining metadata files created.
      *
      * @param resource $finalFilePointer Pointer to the XLSX that will be created
+     *
      * @return void
      */
     public function close($finalFilePointer)
@@ -118,7 +122,7 @@ class Workbook extends AbstractWorkbook
         }
 
         if (!$this->shouldUseInlineStrings) {
-          $this->sharedStringsHelper->close();
+            $this->sharedStringsHelper->close();
         }
 
         // Finish creating all the necessary files before zipping everything together

@@ -11,7 +11,7 @@ class BorderHelper
         Border::STYLE_SOLID => [
             Border::WIDTH_THIN => 'thin',
             Border::WIDTH_MEDIUM => 'medium',
-            Border::WIDTH_THICK => 'thick'
+            Border::WIDTH_THICK => 'thick',
         ],
         Border::STYLE_DOTTED => [
             Border::WIDTH_THIN => 'dotted',
