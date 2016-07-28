@@ -220,9 +220,9 @@ class FileSystemHelper extends \Box\Spout\Common\Helper\FileSystemHelper
         $relsFileContents = <<<EOD
 <?xml version="1.0" encoding="UTF-8"?>
 <Relationships xmlns="{$this->ooXmlPackageNs}/relationships">
+    <Relationship Id="rIdWbk" Type="{$this->ooXmlOfficeDocNs}/relationships/officeDocument" Target="xl/workbook.xml"/>
     <Relationship Id="rIdCore" Type="{$this->ooXmlPackageNs}/relationships/metadata/core-properties" Target="docProps/core.xml"/>
     <Relationship Id="rIdApp" Type="{$this->ooXmlOfficeDocNs}/relationships/extended-properties" Target="docProps/app.xml"/>
-    <Relationship Id="rIdWbk" Type="{$this->ooXmlOfficeDocNs}/relationships/officeDocument" Target="xl/workbook.xml"/>
 </Relationships>
 EOD;
 
@@ -262,7 +262,6 @@ EOD;
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Properties xmlns="{$this->ooDocXmlns}/extended-properties">
   <Application>$appName</Application>
-  <DocSecurity>0</DocSecurity>
   <TotalTime>0</TotalTime>
 </Properties>
 EOD;
@@ -348,6 +347,8 @@ EOD;
   <Default Extension="xml" ContentType="application/xml"/>
   <Default Extension="rels" ContentType="{$this->ooCTypePkg}.relationships+xml"/>
   <Override PartName="/xl/workbook.xml" ContentType="{$this->ooCTypeDoc}.spreadsheetml.sheet.main+xml"/>
+  <Override PartName="/_rels/.rels" ContentType="{$this->ooCTypePkg}.relationships+xml"/>
+
 EOD;
 
         /** @var Worksheet $worksheet */
@@ -359,6 +360,7 @@ EOD;
         if ($shouldUseInlineStrings) {
             $contentTypesXmlFileContents .= <<<EOD
   <Override PartName="/xl/sharedStrings.xml" ContentType="{$this->ooCTypeDoc}.spreadsheetml.sharedStrings+xml"/>
+
 EOD;
         }
         $contentTypesXmlFileContents .= <<<EOD
@@ -384,6 +386,7 @@ EOD;
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <workbook xmlns="{$this->ooXmlSheetDocNs}/main" xmlns:r="{$this->ooXmlOfficeDocNs}/relationships">
   <sheets>
+
 EOD;
 
         /** @noinspection PhpUnnecessaryFullyQualifiedNameInspection */
@@ -415,21 +418,23 @@ EOD;
      */
     public function createWorkbookRelsFile($worksheets)
     {
+        // NB: The "Target" filename is relative to "xl"; so Target=xl/styles.xml would be wrong.
         $workbookRelsXmlFileContents = <<<EOD
 <?xml version="1.0" encoding="UTF-8"?>
 <Relationships xmlns="{$this->ooXmlPackageNs}/relationships">
-  <Relationship Id="rIdStyles" Target="styles.xml" Type="{$this->ooXmlPackageNs}/relationships/styles"/>
+  <Relationship Id="rIdStyles" Target="styles.xml" Type="{$this->ooXmlOfficeDocNs}/relationships/styles"/>
+
 EOD;
         if ($shouldUseInlineStrings) {
-            $workbookRelsXmlFileContents .= <<<EOD
-  <Relationship Id="rIdSharedStrings" Target="sharedStrings.xml" Type="{$this->ooXmlPackageNs}/relationships/sharedStrings"/>
-EOD;
+            $workbookRelsXmlFileContents .=
+              "  <Relationship Id=\"rIdSharedStrings\" Target=\"sharedStrings.xml\" Type=\"{$this->ooXmlOfficeDocNs}/relationships/sharedStrings\"/>" . XML_EOL;
         }
         /** @var Worksheet $worksheet */
         foreach ($worksheets as $worksheet) {
             $worksheetId = $worksheet->getId();
             $rId = $worksheet->getSheetRId();
-            $workbookRelsXmlFileContents .= "  <Relationship Id=\"$rId\" Target=\"worksheets/sheet$worksheetId.xml\" Type=\"{$this->ooXmlPackageNs}/relationships/worksheet\"/>" . XML_EOL;
+            $workbookRelsXmlFileContents .=
+              "  <Relationship Id=\"$rId\" Target=\"worksheets/sheet$worksheetId.xml\" Type=\"{$this->ooXmlOfficeDocNs}/relationships/worksheet\"/>" . XML_EOL;
         }
 
         $workbookRelsXmlFileContents .= '</Relationships>' . XML_EOL;
