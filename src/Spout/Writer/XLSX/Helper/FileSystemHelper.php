@@ -2,8 +2,11 @@
 
 namespace Box\Spout\Writer\XLSX\Helper;
 
-use Box\Spout\Writer\Common\Helper\ZipHelper;
 use Box\Spout\Writer\XLSX\Internal\Worksheet;
+use Rivimey\ZipStreamer\Deflate\COMPR;
+use Rivimey\ZipStreamer\ZipStreamer;
+
+const XML_EOL = "\n";
 
 /**
  * Class FileSystemHelper
@@ -29,6 +32,12 @@ class FileSystemHelper extends \Box\Spout\Common\Helper\FileSystemHelper
     const WORKBOOK_RELS_XML_FILE_NAME = 'workbook.xml.rels';
     const STYLES_XML_FILE_NAME = 'styles.xml';
 
+    protected $ooXmlPackageNs = "http://schemas.openxmlformats.org/package/2006";
+    protected $ooXmlOfficeDocNs = "http://schemas.openxmlformats.org/officeDocument/2006";
+    protected $ooXmlSheetDocNs = "http://schemas.openxmlformats.org/spreadsheetml/2006";
+    protected $ooCTypeDoc = "application/vnd.openxmlformats-officedocument";
+    protected $ooCTypePkg = "application/vnd.openxmlformats-package";
+
     /** @var string Path to the root folder inside the temp folder where the files to create the XLSX will be stored */
     protected $rootFolder;
 
@@ -46,6 +55,92 @@ class FileSystemHelper extends \Box\Spout\Common\Helper\FileSystemHelper
 
     /** @var string Path to the "worksheets" folder inside the "xl" folder */
     protected $xlWorksheetsFolder;
+
+    /** @var  ZipStreamer $zipStream */
+    protected $zipStream;
+
+    /**
+     * Set the ZipStream object to be used to write files.
+     *
+     * @return ZipStreamer
+     */
+    public function setZipStream(ZipStreamer $zipStream)
+    {
+        $this->zipStream = $zipStream;
+    }
+
+    /**
+     * Return the ZipStream object associated with this file helper.
+     *
+     * @return ZipStreamer
+     */
+    public function getZipStream()
+    {
+        return $this->zipStream;
+    }
+
+    /**
+     * Creates an empty folder with the given name under the given parent folder.
+     *
+     * @param string $parentFolderPath The parent folder path under which the folder is going to be created
+     * @param string $folderName The name of the folder to create
+     * @return string Path of the created folder
+     * @throws \Box\Spout\Common\Exception\IOException If unable to create the folder or if the folder path is not inside of the base folder
+     */
+    public function createFolder($parentFolderPath, $folderName)
+    {
+        if (!empty($parentFolderPath)) {
+            $folderPath = $parentFolderPath . '/' . $folderName;
+        } else {
+            $folderPath = $folderName;
+        }
+
+        // TODO: Could explicitly add the subfolder but it isn't needed... Is there a reason to do so?
+        // $this->zipStream->addEmptyDir($folderPath);
+        return $folderPath;
+    }
+
+    /**
+     * Creates a file with the given name and content in the given folder.
+     * The parent folder must exist.
+     *
+     * @param string $parentFolderPath The parent folder path where the file is going to be created
+     * @param string $fileName The name of the file to create
+     * @param string $fileContents The contents of the file to create
+     * @return string Path of the created file
+     * @throws \Box\Spout\Common\Exception\IOException If unable to create the file or if the file path is not inside of the base folder
+     */
+    public function createFileWithContents($parentFolderPath, $fileName, $fileContents)
+    {
+        if (!empty($parentFolderPath)) {
+            $filePath = $parentFolderPath . '/' . $fileName;
+        } else {
+            $filePath = $fileName;
+        }
+        $this->zipStream->addFileFromString($fileContents, $filePath);
+
+        return $filePath;
+    }
+
+    /**
+     * Not implemented: Delete the file
+     *
+     * @throws \Box\Spout\Common\Exception\WriterException
+     */
+    public function deleteFile($filePath)
+    {
+        throw new WriterException('Unable to delete file in streamed zip output');
+    }
+
+    /**
+     * Not implemented: Delete the folder
+     *
+     * @throws \Box\Spout\Common\Exception\WriterException
+     */
+    public function deleteFolderRecursively($folderPath)
+    {
+        throw new WriterException('Unable to delete folder in streamed zip output');
+    }
 
     /**
      * @return string
@@ -94,7 +189,8 @@ class FileSystemHelper extends \Box\Spout\Common\Helper\FileSystemHelper
      */
     protected function createRootFolder()
     {
-        $this->rootFolder = $this->createFolder($this->baseFolderPath, uniqid('xlsx', true));
+        $this->rootFolder = $this->createFolder('', $this->baseFolderPath);
+
         return $this;
     }
 
@@ -123,20 +219,19 @@ class FileSystemHelper extends \Box\Spout\Common\Helper\FileSystemHelper
     {
         $relsFileContents = <<<EOD
 <?xml version="1.0" encoding="UTF-8"?>
-<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
-    <Relationship Id="rIdWorkbook" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>
-    <Relationship Id="rIdCore" Type="http://schemas.openxmlformats.org/officedocument/2006/relationships/metadata/core-properties" Target="docProps/core.xml"/>
-    <Relationship Id="rIdApp" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/extended-properties" Target="docProps/app.xml"/>
+<Relationships xmlns="{$this->ooXmlPackageNs}/relationships">
+    <Relationship Id="rIdWbk" Type="{$this->ooXmlOfficeDocNs}/relationships/officeDocument" Target="xl/workbook.xml"/>
+    <Relationship Id="rIdCore" Type="{$this->ooXmlPackageNs}/relationships/metadata/core-properties" Target="docProps/core.xml"/>
+    <Relationship Id="rIdApp" Type="{$this->ooXmlOfficeDocNs}/relationships/extended-properties" Target="docProps/app.xml"/>
 </Relationships>
 EOD;
 
         $this->createFileWithContents($this->relsFolder, self::RELS_FILE_NAME, $relsFileContents);
-
         return $this;
     }
 
     /**
-     * Creates the "docProps" folder under the root folder as well as the "app.xml" and "core.xml" files in it
+     * Creates the "docProps" folder under the root folder as well as the "app.xml" and "core.xml" files in it.
      *
      * @return FileSystemHelper
      * @throws \Box\Spout\Common\Exception\IOException If unable to create the folder or one of the files
@@ -160,11 +255,14 @@ EOD;
     protected function createAppXmlFile()
     {
         $appName = self::APP_NAME;
+        // TODO: xmlns:vt="{$this->ooDocXmlns}/docPropsVTypes" is needed for TitlesOfParts or HeadingPairs.
+        // Plausibly add: <Company> <AppVersion>
+        // Maybe also: <ScaleCrop> <TitlesOfParts> <LinksUpToDate> <SharedDoc>
         $appXmlFileContents = <<<EOD
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<Properties xmlns="http://schemas.openxmlformats.org/officeDocument/2006/extended-properties">
-    <Application>$appName</Application>
-    <TotalTime>0</TotalTime>
+<Properties xmlns="{$this->ooDocXmlns}/extended-properties">
+  <Application>$appName</Application>
+  <TotalTime>0</TotalTime>
 </Properties>
 EOD;
 
@@ -184,15 +282,16 @@ EOD;
         $createdDate = (new \DateTime())->format(\DateTime::W3C);
         $coreXmlFileContents = <<<EOD
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<cp:coreProperties xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dcmitype="http://purl.org/dc/dcmitype/" xmlns:dcterms="http://purl.org/dc/terms/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-    <dcterms:created xsi:type="dcterms:W3CDTF">$createdDate</dcterms:created>
-    <dcterms:modified xsi:type="dcterms:W3CDTF">$createdDate</dcterms:modified>
-    <cp:revision>0</cp:revision>
+<cp:coreProperties xmlns:cp="{$this->ooXmlPackageNs}/metadata/core-properties" 
+  xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dcmitype="http://purl.org/dc/dcmitype/" 
+  xmlns:dcterms="http://purl.org/dc/terms/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <dcterms:created xsi:type="dcterms:W3CDTF">$createdDate</dcterms:created>
+  <dcterms:modified xsi:type="dcterms:W3CDTF">$createdDate</dcterms:modified>
+  <cp:revision>0</cp:revision>
 </cp:coreProperties>
 EOD;
 
         $this->createFileWithContents($this->docPropsFolder, self::CORE_XML_FILE_NAME, $coreXmlFileContents);
-
         return $this;
     }
 
@@ -207,7 +306,6 @@ EOD;
         $this->xlFolder = $this->createFolder($this->rootFolder, self::XL_FOLDER_NAME);
         $this->createXlRelsFolder();
         $this->createXlWorksheetsFolder();
-
         return $this;
     }
 
@@ -241,31 +339,38 @@ EOD;
      * @param Worksheet[] $worksheets
      * @return FileSystemHelper
      */
-    public function createContentTypesFile($worksheets)
+    public function createContentTypesFile($worksheets, $shouldUseInlineStrings)
     {
         $contentTypesXmlFileContents = <<<EOD
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
-    <Default ContentType="application/xml" Extension="xml"/>
-    <Default ContentType="application/vnd.openxmlformats-package.relationships+xml" Extension="rels"/>
-    <Override ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml" PartName="/xl/workbook.xml"/>
+<Types xmlns="{$this->ooXmlPackageNs}/content-types">
+  <Default Extension="xml" ContentType="application/xml"/>
+  <Default Extension="rels" ContentType="{$this->ooCTypePkg}.relationships+xml"/>
+  <Override PartName="/xl/workbook.xml" ContentType="{$this->ooCTypeDoc}.spreadsheetml.sheet.main+xml"/>
+  <Override PartName="/_rels/.rels" ContentType="{$this->ooCTypePkg}.relationships+xml"/>
+
 EOD;
 
-    /** @var Worksheet $worksheet */
-    foreach ($worksheets as $worksheet) {
-        $contentTypesXmlFileContents .= '<Override ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml" PartName="/xl/worksheets/sheet' . $worksheet->getId() . '.xml"/>';
-    }
+        /** @var Worksheet $worksheet */
+        foreach ($worksheets as $worksheet) {
+            $contentTypesXmlFileContents .=
+                '  <Override PartName="/xl/worksheets/sheet' . $worksheet->getId() . '.xml" ContentType="' . $this->ooCTypeDoc . '.spreadsheetml.worksheet+xml"/>' . XML_EOL;
+        }
 
-    $contentTypesXmlFileContents .= <<<EOD
-    <Override ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml" PartName="/xl/styles.xml"/>
-    <Override ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sharedStrings+xml" PartName="/xl/sharedStrings.xml"/>
-    <Override ContentType="application/vnd.openxmlformats-package.core-properties+xml" PartName="/docProps/core.xml"/>
-    <Override ContentType="application/vnd.openxmlformats-officedocument.extended-properties+xml" PartName="/docProps/app.xml"/>
+        if ($shouldUseInlineStrings) {
+            $contentTypesXmlFileContents .= <<<EOD
+  <Override PartName="/xl/sharedStrings.xml" ContentType="{$this->ooCTypeDoc}.spreadsheetml.sharedStrings+xml"/>
+
+EOD;
+        }
+        $contentTypesXmlFileContents .= <<<EOD
+  <Override PartName="/xl/styles.xml" ContentType="{$this->ooCTypeDoc}.spreadsheetml.styles+xml"/>
+  <Override PartName="/docProps/core.xml" ContentType="{$this->ooCTypePkg}.core-properties+xml"/>
+  <Override PartName="/docProps/app.xml" ContentType="{$this->ooCTypeDoc}.extended-properties+xml"/>
 </Types>
 EOD;
 
         $this->createFileWithContents($this->rootFolder, self::CONTENT_TYPES_XML_FILE_NAME, $contentTypesXmlFileContents);
-
         return $this;
     }
 
@@ -279,8 +384,9 @@ EOD;
     {
         $workbookXmlFileContents = <<<EOD
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
-    <sheets>
+<workbook xmlns="{$this->ooXmlSheetDocNs}/main" xmlns:r="{$this->ooXmlOfficeDocNs}/relationships">
+  <sheets>
+
 EOD;
 
         /** @noinspection PhpUnnecessaryFullyQualifiedNameInspection */
@@ -290,16 +396,17 @@ EOD;
         foreach ($worksheets as $worksheet) {
             $worksheetName = $worksheet->getExternalSheet()->getName();
             $worksheetId = $worksheet->getId();
-            $workbookXmlFileContents .= '<sheet name="' . $escaper->escape($worksheetName) . '" sheetId="' . $worksheetId . '" r:id="rIdSheet' . $worksheetId . '"/>';
+            $rIdSheet = $worksheet->getSheetRId();
+            $sheetName = $escaper->escape($worksheetName);
+            $workbookXmlFileContents .= "    <sheet name=\"$sheetName\" sheetId=\"$worksheetId\" r:id=\"$rIdSheet\"/>" . XML_EOL;
         }
 
         $workbookXmlFileContents .= <<<EOD
-    </sheets>
+  </sheets>
 </workbook>
 EOD;
 
         $this->createFileWithContents($this->xlFolder, self::WORKBOOK_XML_FILE_NAME, $workbookXmlFileContents);
-
         return $this;
     }
 
@@ -311,23 +418,28 @@ EOD;
      */
     public function createWorkbookRelsFile($worksheets)
     {
+        // NB: The "Target" filename is relative to "xl"; so Target=xl/styles.xml would be wrong.
         $workbookRelsXmlFileContents = <<<EOD
 <?xml version="1.0" encoding="UTF-8"?>
-<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
-    <Relationship Id="rIdStyles" Target="styles.xml" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles"/>
-    <Relationship Id="rIdSharedStrings" Target="sharedStrings.xml" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/sharedStrings"/>
-EOD;
+<Relationships xmlns="{$this->ooXmlPackageNs}/relationships">
+  <Relationship Id="rIdStyles" Target="styles.xml" Type="{$this->ooXmlOfficeDocNs}/relationships/styles"/>
 
+EOD;
+        if ($shouldUseInlineStrings) {
+            $workbookRelsXmlFileContents .=
+              "  <Relationship Id=\"rIdSharedStrings\" Target=\"sharedStrings.xml\" Type=\"{$this->ooXmlOfficeDocNs}/relationships/sharedStrings\"/>" . XML_EOL;
+        }
         /** @var Worksheet $worksheet */
         foreach ($worksheets as $worksheet) {
             $worksheetId = $worksheet->getId();
-            $workbookRelsXmlFileContents .= '<Relationship Id="rIdSheet' . $worksheetId . '" Target="worksheets/sheet' . $worksheetId . '.xml" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet"/>';
+            $rId = $worksheet->getSheetRId();
+            $workbookRelsXmlFileContents .=
+              "  <Relationship Id=\"$rId\" Target=\"worksheets/sheet$worksheetId.xml\" Type=\"{$this->ooXmlOfficeDocNs}/relationships/worksheet\"/>" . XML_EOL;
         }
 
-        $workbookRelsXmlFileContents .= '</Relationships>';
+        $workbookRelsXmlFileContents .= '</Relationships>' . XML_EOL;
 
         $this->createFileWithContents($this->xlRelsFolder, self::WORKBOOK_RELS_XML_FILE_NAME, $workbookRelsXmlFileContents);
-
         return $this;
     }
 
@@ -341,31 +453,6 @@ EOD;
     {
         $stylesXmlFileContents = $styleHelper->getStylesXMLFileContent();
         $this->createFileWithContents($this->xlFolder, self::STYLES_XML_FILE_NAME, $stylesXmlFileContents);
-
         return $this;
-    }
-
-    /**
-     * Zips the root folder and streams the contents of the zip into the given stream
-     *
-     * @param resource $streamPointer Pointer to the stream to copy the zip
-     * @return void
-     */
-    public function zipRootFolderAndCopyToStream($streamPointer)
-    {
-        $zipHelper = new ZipHelper($this->rootFolder);
-
-        // In order to have the file's mime type detected properly, files need to be added
-        // to the zip file in a particular order.
-        // "[Content_Types].xml" then at least 2 files located in "xl" folder should be zipped first.
-        $zipHelper->addFileToArchive($this->rootFolder, self::CONTENT_TYPES_XML_FILE_NAME);
-        $zipHelper->addFileToArchive($this->rootFolder, self::XL_FOLDER_NAME . '/' . self::WORKBOOK_XML_FILE_NAME);
-        $zipHelper->addFileToArchive($this->rootFolder, self::XL_FOLDER_NAME . '/' . self::STYLES_XML_FILE_NAME);
-
-        $zipHelper->addFolderToArchive($this->rootFolder, ZipHelper::EXISTING_FILES_SKIP);
-        $zipHelper->closeArchiveAndCopyToStream($streamPointer);
-
-        // once the zip is copied, remove it
-        $this->deleteFile($zipHelper->getZipFilePath());
     }
 }

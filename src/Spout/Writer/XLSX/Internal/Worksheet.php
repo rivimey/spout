@@ -36,29 +36,38 @@ EOD;
     /** @var \Box\Spout\Common\Escaper\XLSX Strings escaper */
     protected $stringsEscaper;
 
-    /** @var Resource Pointer to the sheet data file (e.g. xl/worksheets/sheet1.xml) */
-    protected $sheetFilePointer;
-
     /** @var int Index of the last written row */
     protected $lastWrittenRowIndex = 0;
 
+    /** @var  ZipStreamer $zipStream */
+    protected $zipStream;
+
+    public function setZipStream(ZipStreamer $zipStream)
+    {
+        $this->zipStream = $zipStream;
+    }
+
     /**
      * @param \Box\Spout\Writer\Common\Sheet $externalSheet The associated "external" sheet
-     * @param string $worksheetFilesFolder Temporary folder where the files to create the XLSX will be stored
+     * @param string $worksheetFilesFolder Folder of Zip file where the files to create the XLSX will be stored
      * @param \Box\Spout\Writer\XLSX\Helper\SharedStringsHelper $sharedStringsHelper Helper for shared strings
      * @param bool $shouldUseInlineStrings Whether inline or shared strings should be used
      * @throws \Box\Spout\Common\Exception\IOException If the sheet data file cannot be opened for writing
      */
-    public function __construct($externalSheet, $worksheetFilesFolder, $sharedStringsHelper, $shouldUseInlineStrings)
+    public function __construct($zipStream, $externalSheet, $worksheetFilesFolder, $sharedStringsHelper, $shouldUseInlineStrings)
     {
         $this->externalSheet = $externalSheet;
         $this->sharedStringsHelper = $sharedStringsHelper;
         $this->shouldUseInlineStrings = $shouldUseInlineStrings;
+        $this->zipStream = $zipStream;
 
         /** @noinspection PhpUnnecessaryFullyQualifiedNameInspection */
         $this->stringsEscaper = \Box\Spout\Common\Escaper\XLSX::getInstance();
 
-        $this->worksheetFilePath = $worksheetFilesFolder . '/' . strtolower($this->externalSheet->getName()) . '.xml';
+        $this->worksheetFilePath = strtolower($this->externalSheet->getName()) . '.xml';
+        if (!empty($worksheetFilesFolder)) {
+            $this->worksheetFilePath = $worksheetFilesFolder . '/' . $this->worksheetFilePath;
+        }
         $this->startSheet();
     }
 
@@ -70,24 +79,8 @@ EOD;
      */
     protected function startSheet()
     {
-        $this->sheetFilePointer = fopen($this->worksheetFilePath, 'w');
-        $this->throwIfSheetFilePointerIsNotAvailable();
-
-        fwrite($this->sheetFilePointer, self::SHEET_XML_FILE_HEADER);
-        fwrite($this->sheetFilePointer, '<sheetData>');
-    }
-
-    /**
-     * Checks if the book has been created. Throws an exception if not created yet.
-     *
-     * @return void
-     * @throws \Box\Spout\Common\Exception\IOException If the sheet data file cannot be opened for writing
-     */
-    protected function throwIfSheetFilePointerIsNotAvailable()
-    {
-        if (!$this->sheetFilePointer) {
-            throw new IOException('Unable to open sheet for writing.');
-        }
+        $this->zipStream->addFileOpen($this->worksheetFilePath);
+        $this->zipStream->addFileWrite(self::SHEET_XML_FILE_HEADER . '<sheetData>');
     }
 
     /**
@@ -116,6 +109,14 @@ EOD;
     }
 
     /**
+     * @return int The ID of the worksheet
+     */
+    public function getSheetRId()
+    {
+        return 'rIdSheet' . $this->getId();
+    }
+
+    /**
      * Adds data to the worksheet.
      *
      * @param array $dataRow Array containing data to be written. Cannot be empty.
@@ -133,7 +134,7 @@ EOD;
 
         $rowXML = '<row r="' . $rowIndex . '" spans="1:' . $numCells . '">';
 
-        foreach($dataRow as $cellValue) {
+        foreach ($dataRow as $cellValue) {
             $columnIndex = CellHelper::getCellIndexFromColumnIndex($cellNumber);
             $cellXML = '<c r="' . $columnIndex . $rowIndex . '"';
             $cellXML .= ' s="' . $style->getId() . '"';
@@ -146,7 +147,7 @@ EOD;
                     $cellXML .= ' t="s"><v>' . $sharedStringId . '</v></c>';
                 }
             } else if (CellHelper::isBoolean($cellValue)) {
-                    $cellXML .= ' t="b"><v>' . intval($cellValue) . '</v></c>';
+                $cellXML .= ' t="b"><v>' . intval($cellValue) . '</v></c>';
             } else if (CellHelper::isNumeric($cellValue)) {
                 $cellXML .= '><v>' . $cellValue . '</v></c>';
             } else if (empty($cellValue)) {
@@ -160,12 +161,8 @@ EOD;
             $cellNumber++;
         }
 
-        $rowXML .= '</row>';
-
-        $wasWriteSuccessful = fwrite($this->sheetFilePointer, $rowXML);
-        if ($wasWriteSuccessful === false) {
-            throw new IOException("Unable to write data in {$this->worksheetFilePath}");
-        }
+        $rowXML .= '</row>' . XML_EOL;
+        $this->zipStream->addFileWrite($rowXML);
 
         // only update the count if the write worked
         $this->lastWrittenRowIndex++;
@@ -178,12 +175,7 @@ EOD;
      */
     public function close()
     {
-        if (!is_resource($this->sheetFilePointer)) {
-            return;
-        }
-
-        fwrite($this->sheetFilePointer, '</sheetData>');
-        fwrite($this->sheetFilePointer, '</worksheet>');
-        fclose($this->sheetFilePointer);
+        $this->zipStream->addFileWrite('</sheetData></worksheet>');
+        $this->zipStream->addFileClose();
     }
 }

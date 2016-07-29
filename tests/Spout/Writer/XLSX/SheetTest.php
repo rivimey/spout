@@ -126,6 +126,7 @@ class SheetTest extends \PHPUnit_Framework_TestCase
     private function assertSheetNameEquals($expectedName, $fileName, $message = '')
     {
         $resourcePath = $this->getGeneratedResourcePath($fileName);
+        $this->assertFileExists($resourcePath);
         $pathToWorkbookFile = $resourcePath . '#xl/workbook.xml';
         $xmlContents = file_get_contents('zip://' . $pathToWorkbookFile);
 

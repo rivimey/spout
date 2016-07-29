@@ -266,6 +266,16 @@ class GlobalFunctionsHelper
     }
 
     /**
+     * Wrapper around global function ob_implicit_flush()
+     * @see ob_implicit_flush()
+     *
+     * @return void
+     */
+    public function ob_implicit_flush($flag) {
+      ob_implicit_flush($flag);
+    }
+
+    /**
      * Wrapper around global function iconv()
      * @see iconv()
      *

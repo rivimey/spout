@@ -70,6 +70,7 @@ EOD;
      * Starting and ending whitespaces are preserved.
      *
      * @param string $string
+     *
      * @return int ID of the written shared string
      */
     public function writeString($string)

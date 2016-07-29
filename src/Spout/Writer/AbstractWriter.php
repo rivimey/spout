@@ -118,6 +118,10 @@ abstract class AbstractWriter implements WriterInterface
     {
         $this->outputFilePath = $this->globalFunctionsHelper->basename($outputFileName);
 
+        // We need to stop php buffering the whole stream in memory, or things
+        // go awry. These will get restored in the destructor.
+        $this->globalFunctionsHelper->ob_implicit_flush(true);
+
         $this->filePointer = $this->globalFunctionsHelper->fopen('php://output', 'w');
         $this->throwIfFilePointerIsNotAvailable();
 
